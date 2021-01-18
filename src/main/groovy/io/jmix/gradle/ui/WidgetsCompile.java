@@ -75,7 +75,7 @@ public class WidgetsCompile extends WidgetsTask {
 
     protected String logLevel = "ERROR";
 
-    protected boolean shortClassPath = false;
+    protected boolean shortClassPath = true;
 
     protected int workers = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
 

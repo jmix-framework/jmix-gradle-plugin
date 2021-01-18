@@ -42,7 +42,7 @@ public class WidgetsDebug extends WidgetsTask {
 
     protected boolean printCompilerClassPath = false;
 
-    protected boolean shortClassPath = false;
+    protected boolean shortClassPath = true;
 
     protected String logLevel = "INFO";
 
