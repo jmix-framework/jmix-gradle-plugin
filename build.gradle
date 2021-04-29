@@ -45,6 +45,13 @@ dependencies {
     implementation('com.vaadin:vaadin-sass-compiler:0.9.13') {
         exclude(group: 'com.yahoo.platform.yui', module: 'yuicompressor')
     }
+
+    implementation platform('software.amazon.awssdk:bom:2.15.15')
+    implementation 'software.amazon.awssdk:ec2'
+    implementation 'software.amazon.awssdk:ssm'
+    implementation 'com.jcraft:jsch:0.1.55'
+    implementation 'com.github.docker-java:docker-java:3.2.8'
+    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
 }
 
 tasks.jar {

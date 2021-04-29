@@ -16,6 +16,8 @@
 
 package io.jmix.gradle
 
+import io.jmix.gradle.runner.CloudClean
+import io.jmix.gradle.runner.CloudRun
 import io.jmix.gradle.ui.ThemeCompile
 import io.jmix.gradle.ui.WidgetsCompile
 import org.gradle.api.Action
@@ -82,6 +84,9 @@ class JmixPlugin implements Plugin<Project> {
 
         setupThemeCompile(project)
         setupWidgetsCompile(project)
+
+        project.task([type: CloudRun], 'cloudRun')
+        project.task([type: CloudClean], 'cloudClean')
 
         project.task([type: ZipProject], 'zipProject')
     }
