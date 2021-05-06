@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class AwsCloudClient extends AbstractCloudClient {
@@ -257,6 +256,7 @@ public class AwsCloudClient extends AbstractCloudClient {
             ssh.execute("sudo amazon-linux-extras install docker");
             ssh.execute("sudo service docker start");
             ssh.execute("sudo usermod -a -G docker ec2-user");
+
             logger.lifecycle("Installing docker-compose to EC2 Instance");
             ssh.execute("sudo curl " +
                     "-L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) " +

@@ -41,4 +41,15 @@ public final class ReflectionUtils {
             field.set(object, value);
         }
     }
+
+    public static Object getFieldValue(Field field, Object object) {
+        if (!field.isAccessible()) {
+            field.setAccessible(true);
+        }
+        try {
+            return field.get(object);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Unable to get environment variable value from field " + field.getName());
+        }
+    }
 }

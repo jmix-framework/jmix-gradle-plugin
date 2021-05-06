@@ -37,31 +37,24 @@ public abstract class AbstractCloudClient implements CloudClient {
         return state;
     }
 
+    public final void createResources() throws Exception {
+        doCreateResources();
+        state.setEnvironment(environment());
+    }
+
     private Map<String, Object> environment() {
         Map<String, Object> environment = new HashMap<>();
         for (Field field : ReflectionUtils.getAllFields(this)) {
             Named named = field.getAnnotation(Named.class);
             if (named != null) {
                 String propertyName = named.value().isEmpty() ? field.getName() : named.value();
-                if (!field.isAccessible()) {
-                    field.setAccessible(true);
-                }
-                try {
-                    Object value = field.get(this);
-                    if (value != null) {
-                        environment.put(propertyName, value);
-                    }
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Unable to get environment variable value from field " + field.getName());
+                Object value = ReflectionUtils.getFieldValue(field, this);
+                if (value != null) {
+                    environment.put(propertyName, value);
                 }
             }
         }
         return environment;
-    }
-
-    public final void createResources() throws Exception {
-        doCreateResources();
-        state.setEnvironment(environment());
     }
 
     protected abstract void doCreateResources() throws Exception;

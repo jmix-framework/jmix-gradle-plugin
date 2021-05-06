@@ -65,10 +65,6 @@ public class InstanceState {
         this.environment = environment;
     }
 
-    public void addEnvironmentVariable(String key, Object value) {
-        this.environment.put(key, value);
-    }
-
     public Object getEnvironmentVariable(String key) {
         return this.environment.get(key);
     }
