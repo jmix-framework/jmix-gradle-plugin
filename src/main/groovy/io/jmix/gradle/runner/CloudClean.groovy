@@ -35,14 +35,14 @@ class CloudClean extends DefaultTask {
 
     @TaskAction
     void destroy() {
-        Directory tmpDir = project.layout.buildDirectory.dir("tmp/jmixCloudRun").get()
-        if (tmpDir.asFile.exists()) {
-            File file = tmpDir.file('compute-instance.json').asFile
+        Directory outDir = project.layout.buildDirectory.dir("tmp/jmixCloudRun").get()
+        if (outDir.asFile.exists()) {
+            File file = outDir.file('compute-instance.json').asFile
             if (file.exists()) {
-                ComputeInstance instance = objectMapper.readValue(file, ComputeInstance.class)
-                CloudClientFactory.forProvider(instance.getProvider(), this, tmpDir.asFile).destroy(instance)
+                InstanceState instance = objectMapper.readValue(file, InstanceState.class)
+                CloudClientFactory.fromState(instance, this, outDir.asFile.path).destroyResources()
             }
-            FileUtils.deleteDirectory(tmpDir.asFile)
+            FileUtils.deleteDirectory(outDir.asFile)
         }
     }
 }

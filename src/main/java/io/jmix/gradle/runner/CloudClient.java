@@ -1,12 +1,12 @@
 package io.jmix.gradle.runner;
 
-import org.gradle.api.Task;
-
-import java.io.File;
+import com.jcraft.jsch.JSchException;
+import io.jmix.gradle.runner.ssh.SshSession;
 
 public interface CloudClient {
 
-    void init(Task task, File tmpDir);
-    ComputeInstance create() throws Exception;
-    void destroy(ComputeInstance instance) throws Exception;
+    void createResources() throws Exception;
+    void destroyResources() throws Exception;
+    InstanceState state();
+    SshSession ssh() throws JSchException;
 }

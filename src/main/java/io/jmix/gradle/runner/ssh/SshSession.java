@@ -17,10 +17,9 @@
 package io.jmix.gradle.runner.ssh;
 
 import com.jcraft.jsch.*;
-import io.jmix.gradle.runner.ComputeInstance;
+import io.jmix.gradle.runner.InstanceState;
 
 import java.io.*;
-import java.util.Date;
 
 public class SshSession implements AutoCloseable {
 
@@ -28,7 +27,7 @@ public class SshSession implements AutoCloseable {
 
     private final Session session;
 
-    public static SshSession forComputeInstance(ComputeInstance instance) throws JSchException {
+    public static SshSession forInstance(InstanceState instance) throws JSchException {
         JSch jsch = new JSch();
         jsch.addIdentity(instance.getKeyFile());
         Session session = jsch.getSession(instance.getUsername(), instance.getHost());

@@ -34,7 +34,6 @@ class CloudRun extends DefaultTask {
     private ObjectMapper objectMapper
 
     private String provider = 'aws'
-    private boolean forceRecreate = false
 
     @Input
     String getProvider() {
@@ -44,16 +43,6 @@ class CloudRun extends DefaultTask {
     @Option(option = 'provider', description = 'Configures cloud provider where application should be deployed.')
     void setProvider(String provider) {
         this.provider = provider
-    }
-
-    @Input
-    boolean getForceRecreate() {
-        return forceRecreate
-    }
-
-    @Option(option = 'forceRecreate', description = 'Configures whether task should always recreate cloud instance')
-    void setForceRecreate(boolean forceRecreate) {
-        this.forceRecreate = forceRecreate
     }
 
     CloudRun() {
@@ -66,53 +55,50 @@ class CloudRun extends DefaultTask {
 
     @TaskAction
     void run() {
-        Directory tmpDir = project.layout.buildDirectory.dir("tmp/jmixCloudRun").get()
-        if (!tmpDir.asFile.exists()) {
-            tmpDir.asFile.mkdirs()
+        Directory outDir = project.layout.buildDirectory.dir("tmp/jmixCloudRun").get()
+        if (!outDir.asFile.exists()) {
+            outDir.asFile.mkdirs()
         }
-        File file = tmpDir.file('compute-instance.json').asFile
-        ComputeInstance instance = null
+
+        File file = outDir.file('compute-instance.json').asFile
+        InstanceState state = null
         boolean createInstance = true
 
         if (file.exists()) {
-            instance = objectMapper.readValue(file, ComputeInstance.class)
+            state = objectMapper.readValue(file, InstanceState)
 
-            try (SshSession ssh = SshSession.forComputeInstance(instance)) {
+            try (SshSession ssh = SshSession.forInstance(state)) {
                 ssh.execute("cd app && docker-compose kill")
-            }
-
-            if (forceRecreate) {
-                logger.lifecycle("Destroying current instance $instance.host")
-                CloudClientFactory.forProvider(instance.getProvider(), this, tmpDir.asFile).destroy(instance)
-                logger.lifecycle("Successfully destroyed instance $instance.host")
-            } else {
-                createInstance = false
             }
         }
 
         if (createInstance) {
             logger.lifecycle("Creating instance using $provider provider")
-            instance = CloudClientFactory.forProvider(provider, this, tmpDir.asFile).create()
-            objectMapper.writeValue(file, instance)
-            logger.lifecycle("Successfully created instance $instance.host")
+            CloudClient client = CloudClientFactory.create(provider, this, outDir.asFile.path)
+            client.createResources()
+            state = client.state()
+            objectMapper.writeValue(file, state)
+            logger.lifecycle("Successfully created instance $state.host")
+        } else {
+            logger.lifecycle("Using existing instance $state.host")
         }
 
         String imageName = project.tasks.bootBuildImage.imageName
         String imageArchiveName = "${imageName.replaceAll("[/:]", "-")}.tar.gz"
-        File imageArchiveFile = tmpDir.file(imageArchiveName).asFile
+        File imageArchiveFile = outDir.file(imageArchiveName).asFile
         logger.lifecycle("Saving Docker image to file $imageArchiveName")
         try (InputStream dockerImageStream = DockerUtils.saveImage(local(), imageName)) {
             gzip(dockerImageStream, imageArchiveFile)
         }
         logger.lifecycle("Successfully saved Docker image ")
 
-        runDockerCompose(instance, imageArchiveFile)
+        runDockerCompose(state, imageArchiveFile)
 
-        logger.quiet("Application is running on http://$instance.host:8080")
+        logger.quiet("Application is running on http://$state.host:8080")
     }
 
-    private void runDockerCompose(ComputeInstance instance, File imageFile) {
-        try (SshSession ssh = SshSession.forComputeInstance(instance)) {
+    private void runDockerCompose(InstanceState instance, File imageFile) {
+        try (SshSession ssh = SshSession.forInstance(instance)) {
             String imageName = project.tasks.bootBuildImage.imageName
 
             ssh.execute("mkdir app")

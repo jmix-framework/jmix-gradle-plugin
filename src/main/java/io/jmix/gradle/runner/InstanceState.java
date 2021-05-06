@@ -3,18 +3,22 @@ package io.jmix.gradle.runner;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ComputeInstance {
+public class InstanceState {
 
     private String provider;
     private String host;
     private String username;
     private String keyFile;
-    private Map<String, String> resources = new HashMap<>();
+    private Map<String, Object> environment = new HashMap<>();
 
-    public ComputeInstance() {
+    public InstanceState() {
     }
 
-    public ComputeInstance(String provider, String host, String username, String keyFile) {
+    public InstanceState(String provider) {
+        this.provider = provider;
+    }
+
+    public InstanceState(String provider, String host, String username, String keyFile) {
         this.provider = provider;
         this.host = host;
         this.username = username;
@@ -53,19 +57,23 @@ public class ComputeInstance {
         this.keyFile = keyFile;
     }
 
-    public Map<String, String> getResources() {
-        return resources;
+    public Map<String, Object> getEnvironment() {
+        return environment;
     }
 
-    public void setResources(Map<String, String> resources) {
-        this.resources = resources;
+    public void setEnvironment(Map<String, Object> environment) {
+        this.environment = environment;
     }
 
-    public void addResource(String key, String value) {
-        this.resources.put(key, value);
+    public void addEnvironmentVariable(String key, Object value) {
+        this.environment.put(key, value);
     }
 
-    public String getResource(String key) {
-        return this.resources.get(key);
+    public Object getEnvironmentVariable(String key) {
+        return this.environment.get(key);
+    }
+
+    public boolean hasEnvironmentVariable(String key) {
+        return this.environment.containsKey(key);
     }
 }
