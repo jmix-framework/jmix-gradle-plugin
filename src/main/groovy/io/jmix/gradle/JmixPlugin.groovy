@@ -21,7 +21,10 @@ import io.jmix.gradle.ui.WidgetsCompile
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.UnknownTaskException
 import org.gradle.api.artifacts.*
+import org.gradle.api.plugins.GroovyPlugin
+import org.gradle.api.plugins.JavaPlugin
 
 import java.util.jar.Manifest
 
@@ -40,6 +43,11 @@ class JmixPlugin implements Plugin<Project> {
         project.extensions.create('jmix', JmixExtension, project)
 
         project.afterEvaluate {
+            def kotlinPlugin = project.plugins.findPlugin("org.jetbrains.kotlin.jvm")
+            if (kotlinPlugin) {
+                setupKotlinOutputDir(project)
+            }
+
             if (isJmixApp(project) && project.jmix.useBom) {
                 String bomVersion = project.jmix.bomVersion ?: getBomVersion()
                 def platform = project.dependencies.platform("io.jmix.bom:jmix-bom:$bomVersion")
@@ -68,10 +76,29 @@ class JmixPlugin implements Plugin<Project> {
                 project.configurations.create('enhancing')
                 project.dependencies.add('enhancing', 'org.eclipse.persistence:org.eclipse.persistence.jpa:2.7.7-4-jmix')
 
-                project.tasks.findByName('compileJava').doLast(new EnhancingAction('main'))
+                boolean isEnhancingActionExecuted = false
+                project.tasks.findByName('compileJava').doLast({
+                    isEnhancingActionExecuted = true
+                    new EnhancingAction('main')
+                })
+                /**
+                 * If project 100% kotlin, compileJava will not execute and EnhancingAction will not run.
+                 * So we need run EnhancingAction after compileKotlin.
+                 */
+                if (!isEnhancingActionExecuted && kotlinPlugin) {
+                    project.tasks.findByName('compileKotlin').doLast(new EnhancingAction('main'))
+                }
+
                 project.tasks.findByName('classes').doLast({ EnhancingAction.copyGeneratedFiles(project, 'main') })
 
-                project.tasks.findByName('compileTestJava').doLast(new EnhancingAction('test'))
+                isEnhancingActionExecuted = false
+                project.tasks.findByName('compileTestJava').doLast({
+                    isEnhancingActionExecuted = true
+                    new EnhancingAction('test')
+                })
+                if (!isEnhancingActionExecuted && kotlinPlugin) {
+                    project.tasks.findByName('compileTestKotlin').doLast(new EnhancingAction('test'))
+                }
                 project.tasks.findByName('testClasses').doLast({ EnhancingAction.copyGeneratedFiles(project, 'test') })
             }
 
@@ -94,6 +121,28 @@ class JmixPlugin implements Plugin<Project> {
         setupWidgetsCompile(project)
 
         project.task([type: ZipProject], 'zipProject')
+    }
+
+    /**
+     * Kotlin classes output dir should be the same as java output dir.
+     * Otherwise the current implementation of entities enhancing doesn't work properly
+     */
+    private void setupKotlinOutputDir(Project project) {
+        def kotlinPlugin = project.plugins.findPlugin("org.jetbrains.kotlin.jvm")
+        if (kotlinPlugin) {
+            try {
+                project.tasks.getByName('compileKotlin', {
+                    destinationDir = project.sourceSets.main.java.outputDir
+                })
+                project.tasks.getByName('compileTestKotlin', {
+                    destinationDir = project.sourceSets.test.java.outputDir
+                })
+            } catch (UnknownTaskException ignored) {
+                project.logger.warn(ignored.message)
+            } catch (Exception e) {
+                project.logger.warn(e.message)
+            }
+        }
     }
 
     private boolean isJmixApp(Project project) {
@@ -122,6 +171,7 @@ class JmixPlugin implements Plugin<Project> {
     }
 
     protected void setupWidgetsCompile(Project project) {
+        project.logger.debug("setupWidgetsCompile called")
         project.ext.WidgetsCompile = WidgetsCompile.class
         def widgetsConfiguration = project.configurations.create(WIDGETS_CONFIGURATION_NAME)
 
