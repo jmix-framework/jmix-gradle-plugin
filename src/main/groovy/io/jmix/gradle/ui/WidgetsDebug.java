@@ -132,15 +132,6 @@ public class WidgetsDebug extends WidgetsTask {
 
     protected List<File> collectClassPathEntries() {
         List<File> compilerClassPath = new ArrayList<>();
-
-        // import widgets dependencies
-        Configuration widgetsConfiguration = getProject().getConfigurations().findByName(JmixPlugin.WIDGETS_CONFIGURATION_NAME);
-        if (widgetsConfiguration != null) {
-            for (ResolvedArtifact artifact : widgetsConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
-                compilerClassPath.add(artifact.getFile());
-            }
-        }
-
         // import runtime dependencies such as servlet-api
         Configuration runtimeConfiguration = getProject().getConfigurations().findByName("runtime");
         if (runtimeConfiguration != null) {
@@ -173,6 +164,16 @@ public class WidgetsDebug extends WidgetsTask {
                 .filter(f -> includedArtifact(f.getName()) && !compilerClassPath.contains(f))
                 .collect(Collectors.toList());
         compilerClassPath.addAll(compileClassPathArtifacts);
+
+        // import widgets dependencies
+        Configuration widgetsConfiguration = getProject().getConfigurations().findByName(JmixPlugin.WIDGETS_CONFIGURATION_NAME);
+        if (widgetsConfiguration != null) {
+            List<File> widgetsDeps = widgetsConfiguration.getResolvedConfiguration().getFiles().stream()
+                    .filter(f -> includedArtifact(f.getName()) && !compilerClassPath.contains(f))
+                    .collect(Collectors.toList());
+
+            compilerClassPath.addAll(widgetsDeps);
+        }
 
         if (getProject().getLogger().isEnabled(LogLevel.DEBUG)) {
             StringBuilder sb = new StringBuilder();
