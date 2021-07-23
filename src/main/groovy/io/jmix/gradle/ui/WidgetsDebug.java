@@ -17,6 +17,7 @@
 package io.jmix.gradle.ui;
 
 import io.jmix.gradle.ClassPathUtil;
+import io.jmix.gradle.JmixPlugin;
 import org.apache.tools.ant.taskdefs.condition.Os;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -131,6 +132,14 @@ public class WidgetsDebug extends WidgetsTask {
 
     protected List<File> collectClassPathEntries() {
         List<File> compilerClassPath = new ArrayList<>();
+
+        // import widgets dependencies
+        Configuration widgetsConfiguration = getProject().getConfigurations().findByName(JmixPlugin.WIDGETS_CONFIGURATION_NAME);
+        if (widgetsConfiguration != null) {
+            for (ResolvedArtifact artifact : widgetsConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
+                compilerClassPath.add(artifact.getFile());
+            }
+        }
 
         // import runtime dependencies such as servlet-api
         Configuration runtimeConfiguration = getProject().getConfigurations().findByName("runtime");
